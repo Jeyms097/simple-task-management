@@ -7,11 +7,20 @@ use Illuminate\Http\Request;
 
 class TaskController extends Controller
 {
-    public function index()
-    {
-        $tasks = Task::orderBy('created_at', 'desc')->paginate(5);
-        return view('main', compact('tasks'));
+public function index(Request $request)
+{
+    $tasks = Task::orderBy('created_at', 'desc')->paginate(4);
+
+    if ($request->wantsJson()) {
+        return response()->json([
+            'data' => $tasks->items(),
+            'current_page' => $tasks->currentPage(),
+            'last_page' => $tasks->lastPage(),
+        ]);
     }
+
+    return view('main', compact('tasks'));
+}
 
     public function store(Request $request)
     {
@@ -21,8 +30,8 @@ class TaskController extends Controller
             'due_date' => 'nullable|date',
         ]);
 
-        Task::create($validated);
-        return redirect()->route('tasks.index')->with('success', 'Task added.');
+        $task = Task::create($validated);
+        return response()->json($task);
     }
 
     public function edit(Task $task)
@@ -39,19 +48,21 @@ class TaskController extends Controller
         ]);
 
         $task->update($validated);
-        return redirect()->route('tasks.index')->with('success', 'Task updated.');
+        return response()->json($task);
     }
 
     public function destroy(Task $task)
     {
         $task->delete();
-        return redirect()->route('tasks.index')->with('success', 'Task deleted.');
+        return response()->json(['message' => 'Task Deleted']);
     }
+
 
     public function toggle(Task $task)
     {
         $task->is_completed = !$task->is_completed;
         $task->save();
-        return redirect()->route('tasks.index');
+
+        return response()->json($task);
     }
 }
